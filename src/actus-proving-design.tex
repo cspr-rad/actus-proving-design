@@ -2,8 +2,9 @@
 
 \usepackage{amsfonts}
 \usepackage{amsmath}
-\usepackage[total={7in,9in}]{geometry}
+\usepackage{amssymb}
 \usepackage{amsthm}
+\usepackage[total={7in,9in}]{geometry}
 \usepackage{graphicx}
 \usepackage{lmodern}
 \usepackage{hyperref}
@@ -17,6 +18,66 @@
 
 \maketitle
 
+This document outlines a general structure for an ACTUS proving system. The goals of such a system are to prove the coherence of term sets and contract states, the correctness of schedules, and the correctness of contract state transitions based on event sequences. The proofs are supposed to be succinct and zero knowledge.
 
+This structure is independent of the specifics of the ACTUS contract type. It is meant to apply to all existing and future ACTUS contract types, as long as some particular fundamentals of the ACTUS information architecture remain the same.
+
+This structure does not assume any particular proving system. What it assumes is a zero knowledge virtual machine which can prove the results of executing pure, partial computable functions.
+
+The scope of this design includes proving facts about individual contracts, and also heterogeneous portfolios of contracts. The cases of individual contracts and portfolios of contracts are addressed within the same structure.
+
+Let $T$ be a set of contract term sets. An element of $T$ describes the terms of zero or more contracts, including any referential relationships between the contracts. Let $T$ be a join semilattice; that is, let any two elements of $T$ have a least upper bound, which represents the union of those two term sets.
+
+Let there be a total computable function $\text{coherent} : T \to \{0,1\}$ which outputs $1$ on all and only the coherent term sets, i.e., those term sets satisfying the coherence conditions for term sets of the ACTUS contract types.
+
+Let $\vee$ denote the join operation of any join semilattice (which join semilattice being specified by context).
+
+Let $E$ be a set of event sequences. An element of $E$ describes zero or more timestamped events which may affect the states of contracts.
+
+Let $I$ be the set of time intervals. An element of $I$ can be described as a closed interval $[t_0, t_1]$, where $t_0, t_1 \in \mathbb{Q}$ are rational numbers and $t_0 \leq t_1$. $t_0$ and $t_1$ represent Unix timestamps, i.e., seconds since the Unix epoch. Observe that $I$ is a meet semilattice under the following partial ordering:
+
+\begin{equation}
+	[t_0,t_1] \leq [t_2,t_3] \Leftrightarrow (t_0 \leq t_2 \vee t_1 \leq t_3).
+\end{equation}
+
+Let $\leqslant$ be the partial ordering on $I$ defined as follows:
+
+\begin{equation}
+	[t_0,t_1] \leqslant [t_2,t_3] \Leftrightarrow t_1 < t_2.
+\end{equation}
+
+Let there be a total computable function $\text{range} : E \to I$ which gives the time interval of an event sequence, i.e., the range of timestamps of events in the sequence.
+
+Let there be a partial computable function $\smallfrown\ : E \times E \to E$ which joins compatible event sequences. An ordered pair $(e_0, e_1)$ of event sequences is compatible if and only if $\text{range}(e_0) \leqslant \text{range}(e_1)$. $\smallfrown$ is defined on all and only the compatible pairs of event sequences. The function $\smallfrown$ should output the concatenation of the two input event sequences. This requires that:
+
+\begin{equation}
+	\text{range}(e_0 \smallfrown e_1) = \text{range}(e_0) \vee \text{range}(e_1).
+\end{equation}
+
+Let $C$ be a set of contract states. An element of $C$ represents the states of all contracts in an element of $T$, at some point in time. 
+
+Let there be a total computable function $\text{asOf} : C \to \mathbb{Q}$ which gives the Unix timestamp which a state $c \in C$ is as of.
+
+Let there be a partial computable function $\text{initial} : T \to C$, giving the initial states of all contracts in an element of $T$. initial should be defined on all and only the coherent elements of $T$, i.e., those $t \in T$ such that $\text{coherent}(t) = 1$.
+
+Let there be a total computable function $\text{applies} : T \times C \to \{0,1\}$, which outputs 1 on an input pair $(t, c)$ if and only if $c$ makes sense as a description of the states of the contracts in $t$.
+
+Let $\pi_0 : A \times B \to A$ and $\pi_1 : A \times B \to B$ be the generic Cartesian product projection functions.
+
+Let there be a partial computable function $\text{update} : T \times C \times E \to C$, the state transition function. This function takes as input a term set $t \in T$, a state $c \in C$, and an event sequence $e \in E$. This function is defined on an input triple $(t, c, e)$ if and only if $\text{asOf}(c) < \pi_0(\text{range}(e))$, $\text{coherent}(t) = 1$, and $\text{applies}(t, c) = 1$.
+
+The following laws should be true:
+
+\begin{enumerate}
+	\item If $\text{update}(t, c, e)$ is defined, then $\text{applies}(t, \text{update}(t, c, e)) = 1$ and:
+		\begin{equation}
+			\text{asOf}(\text{update}(t, c, e)) = \pi_1(\text{range}(e)).
+		\end{equation}
+	\item If $\text{update}(t, c, e_0)$ and $\text{update}(t, \text{update}(t, c, e_0), e_1)$ are defined, and $e_0 \smallfrown e_1$ is defined, then
+		\begin{equation}
+			\text{update}(t, c, e_0 \smallfrown e_1) = \text{update}(t, \text{update}(t, c, e_0), e_1).
+		\end{equation}
+	\item If $\text{coherent}(t) = 1$, then $\text{applies}(t, \text{initial}(t)) = 1$.
+\end{enumerate}
 
 \end{document}
