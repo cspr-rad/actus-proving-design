@@ -1,2 +1,4 @@
 result*
 *.pdf
+*.swp
+src/*.swp

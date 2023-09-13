@@ -22,15 +22,21 @@ This document outlines a general structure for an ACTUS proving system. The goal
 
 This structure is independent of the specifics of the ACTUS contract type. It is meant to apply to all existing and future ACTUS contract types, as long as some particular fundamentals of the ACTUS information architecture remain the same.
 
-This structure does not assume any particular proving system. What it assumes is a zero knowledge virtual machine which can prove the results of executing pure, partial computable functions.
+This structure does not assume any particular proving system. It assumes is a zero knowledge virtual machine which can prove the results of executing pure, partial computable functions. Also, it assumes that this zk-VM is capable of recursive proofs.
 
 The scope of this design includes proving facts about individual contracts, and also heterogeneous portfolios of contracts. The cases of individual contracts and portfolios of contracts are addressed within the same structure.
 
-Let $T$ be a set of contract term sets. An element of $T$ describes the terms of zero or more contracts, including any referential relationships between the contracts. Let $T$ be a join semilattice; that is, let any two elements of $T$ have a least upper bound, which represents the union of those two term sets.
+Let $T$ be a set of contract term sets. An element of $T$ describes the terms of zero or more contracts, including any referential relationships between the contracts.
+
+Let $T$ have a lattice structure with a bottom element. This means in other words that there is partial ordering on $T$ such that $T$ is a meet semilattice (every pair of elements has a greatest lower bound), $T$ is a join semilattice (every pair of elements has a least upper bound), and there is an element $\emptyset_T \in T$ such that for all $a \in T$, $\emptyset_T \leq a$.
+
+The idea of this lattice structure is that the join of a pair of elements $t_0, t_1 \in T$ contains all of the contracts in $t_0$ and all of the contracts in $t_1$, whereas the meet of a pair of elements contains all of the contracts that are in both $t_0$ and $t_1$. The bottom element $\emptyset_T$ consists of zero contracts.
+
+To make this lattice structure well defined requires some understanding of the identity conditions of contracts: i.e., when are two contracts the same? It seems to be possible for two contracts to have exactly the same terms, parties, inception date, etc., and to be different only in that they are distinct. Therefore, defining the identity conditions of contracts should rely on assigning a globally unique identifier to each contract. For example, the globally unique identifier of a contract can be a pair of (the unique identifier of) the issuing institution and a serial number. For two contracts to be considered identical, they must have the same globally unique identifier but also the same terms, parties, inception date, etc.
+
+Let $\vee$ denote the join operation of any join semilattice (which join semilattice being specified by context). Let $\wedge$ denote the meet operation of any meet semilattice (which meet semilattice being specified by context).
 
 Let there be a total computable function $\text{coherent} : T \to \{0,1\}$ which outputs $1$ on all and only the coherent term sets, i.e., those term sets satisfying the coherence conditions for term sets of the ACTUS contract types.
-
-Let $\vee$ denote the join operation of any join semilattice (which join semilattice being specified by context).
 
 Let $E$ be a set of event sequences. An element of $E$ describes zero or more timestamped events which may affect the states of contracts.
 
@@ -60,11 +66,13 @@ Let there be a total computable function $\text{asOf} : C \to \mathbb{Q}$ which 
 
 Let there be a partial computable function $\text{initial} : T \to C$, giving the initial states of all contracts in an element of $T$. initial should be defined on all and only the coherent elements of $T$, i.e., those $t \in T$ such that $\text{coherent}(t) = 1$.
 
-Let there be a total computable function $\text{applies} : T \times C \to \{0,1\}$, which outputs 1 on an input pair $(t, c)$ if and only if $c$ makes sense as a description of the states of the contracts in $t$.
+Let there be a total computable function $\text{applies} : T \times C \to \{0,1\}$, which outputs 1 on an input pair $(t, c)$ if and only if $c$ makes sense as a description of the states of the contracts in $t$, meaning that $c$ describes the states of all of the contracts in $t$ and no other contracts.
 
 Let $\pi_0 : A \times B \to A$ and $\pi_1 : A \times B \to B$ be the generic Cartesian product projection functions.
 
 Let there be a partial computable function $\text{update} : T \times C \times E \to C$, the state transition function. This function takes as input a term set $t \in T$, a state $c \in C$, and an event sequence $e \in E$. This function is defined on an input triple $(t, c, e)$ if and only if $\text{asOf}(c) < \pi_0(\text{range}(e))$, $\text{coherent}(t) = 1$, and $\text{applies}(t, c) = 1$.
+
+Let there be a partial computable function $\oplus\ : C \times C \to C$. This function serves to combine simultaneous states for disjoint sets of contracts. This can always be done without conflict. $c_0 \oplus c_1$ is defined if and only if there are $t_0, t_1, \in T$ such that: $\text{applies}(t_0, c_0) = 1$, $\text{applies}(t_1, c_1) = 1$, $t_0 \wedge t_1 = \emptyset_T$, and $\text{asOf}(c_0) = \text{asOf}(c_1)$. If $c_0 \oplus c_1$ is defined, then the $t_0, t_1 \in T$ witnessing this fact are unique (because each state can apply only to one set of contracts).
 
 The following laws should be true:
 
@@ -78,6 +86,45 @@ The following laws should be true:
 			\text{update}(t, c, e_0 \smallfrown e_1) = \text{update}(t, \text{update}(t, c, e_0), e_1).
 		\end{equation}
 	\item If $\text{coherent}(t) = 1$, then $\text{applies}(t, \text{initial}(t)) = 1$.
+	\item If $c_0 \oplus c_1$ is defined, then $\text{asOf}(c_0 \oplus c_1) = \text{asOf}(c_0)$, and for the unique $t_0, t_1 \in T$ such that $\text{applies}(t_0, c_0) = 1$ and $\text{applies}(t_1, t_1) = 1$,
+		\begin{equation}
+			\text{applies}(t_0 \vee _1, c_0 \oplus c_1) = 1.
+		\end{equation}
+	\item If $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$, and $t_0 \wedge t_1 = \emptyset_T$, and $\text{asOf}(c_0) = \text{asOf}(c_1)$, and $\text{update}(t_0, c_0, e)$ and $\text{update}(t_1, c_1, e)$ are defined, then:
+		\begin{equation}
+			\text{update}(t_0 \vee t_1, c_0 \oplus c_1, e) = \text{update}(t_0, c_0, e) \oplus \text{update}(t_1, c_1, e).
+		\end{equation}
 \end{enumerate}
+
+The laws ensure that the state transitions have the same results regardless of how finely we slice an event sequence and how many times we apply the update function. They also ensure that the state transitions have the same results when they act on portfolios as when they act on slices of those portfolios, up to and including individual contracts within those portfolios.
+
+Let there be a partial computable function $\text{schedule} : T \times C \to E$. This function takes a pair $(t, c)$ of contracts and states. It returns a canonical event sequence which would fulfill all of the contracts $t$ starting from states $c$. $\text{schedule}(t, c)$ is defined if and only if $\text{applies}(t, c) = 1$.
+
+Let $H$ be a collision-resistant, 256-bit hash function. When we apply $H$ to an object, let it denote the result of Merkelizing the object, i.e., transforming the object into the root of a Merkle hash tree using the hash function $H$. This process should allow each piece of the object being serialized to be verified using a Merkle opening proof.
+
+There can be more than one valid way of Merkelizing an object. Consider for example an event sequence $e = e_0 \smallfrown e_1 \smallfrown e_2 \smallfrown e_3$. This could be Merkelized as $H((H(e_0 \smallfrown e_1), H(e_2 \smallfrown e_3)))$, or alternately as $H((H(e_0), H(e_1 \smallfrown e_2 \smallfrown e_3)))$, or $H((H((H(e_0), H(e_1))), H((H(e_2), H(e_3)))))$. These are just a few of the alternatives. The reason for allowing such flexibility is to provide degrees of freedom in how recursive proofs (which are about to be described) may be composed. The end result is that there is not a unique valid hash for a given object, which is ultimately okay.
+
+The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
+
+\begin{enumerate}
+	\item There is a $t \in T$ such that $H(t) = h$ and $\text{coherent}(t) = 1$.
+	\item There is $x \in T \times C$ such that $H(x) = h$ and $\text{applies}(t, c) = 1$.
+	\item There is $x = (t, c, s) \in T \times C \times E$ such that $H(x) = h$ and $\text{schedule}(t, c) = s$.
+	\item There is $x = (t, c_0, e, c_1) \in T \times C \times E \times C$ such that $H(x) = h$ and $\text{update}(t, c_0, e) = c_1$.
+\end{enumerate}
+
+For each of these statement forms, there is an applicable recursive proof scheme. The reason for the proof schemes being recursive is that we assume that there is an upper bound on the amount of computation we can verify in a single proof, but we require the system to scale to function executions on arbitrarily complex inputs. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by directly proving the evaluation of the function on the given input. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
+
+Although branch proofs are described below with exactly two children, the descriptions can be extended in a straightforward manner to allow for branching factors greater than two.
+
+A branch proof of $\text{coherent}(t) = 1$ verifies that there are some $t_0, t_1 \in T$ such that $t_0 \vee t_1 = t$, $\text{coherent}(t_0) = 1$, and $\text{coherent}(t_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $t_i$. TODO: it also needs to verify that contract identifiers are globally unique, which implies that $t_0, t_1$ are disjoint
+
+A branch proof of $\text{applies}(t, c) = 1$ verifies that there are some $t_0, t_1 \in T$ and $c_0, c_1 \in C$ such that $t_0 \vee t_1 = t$ and $c_0 \oplus c_1 = c$, such that $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_i)$. TODO: also needs to verify that $t_0, t_1$ are disjoint
+
+TODO: schedule branch proofs; need to define regularity in schedules to make this possible
+
+A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ verifies that there are some $t_0, t_1 \in T$ and $c_{0,0}, c_{0,1}, c_{1,0}, c_{1,1} \in C$ such that $t_0 \vee t_1 = t$ and $c_{0,0} \oplus c_{0,1} = c_0$ and $c_{1,0} \oplus c_{1,1} = c_1$ and $\text{update}(t_0, c_{0,0}, e) = c_{1,0}$ and $\text{update}(t_1, c_{0,1}, e) = c_{1,1}$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_{0,i}, e, c_{1,i})$. TODO: also needs to verify that $t_0, t_1$ are disjoint
+
+A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t, c_i, e_i, c_{1+i})$. TODO: how to prove event sequence concatenation?
 
 \end{document}
