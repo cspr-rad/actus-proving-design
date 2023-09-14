@@ -138,7 +138,26 @@ These facts suffice to imply that $A \cup B = C$. If $A \cup B = C$ and $A, B, C
 
 This proving scheme for set unions requires a system for succinctly verifying facts of the form $A \uplus_x B = C$. Specifically, this can be done by succinctly verifying statements of the form: for given $h, h_0, h_1, h_x$, there are sets $A, B, C$ and a set element $x$ such that $A \uplus_x B = C$, $H(A) = h_0$, $H(B) = h_1$, $H(C) = h$, and $H(x) = h_x$. Such a statement can be verified in $O(1)$ when sets are Merkelized, because it just requires that $h$ be the root of a Merkelization of $C$ which decomposes $C$ into $A \setminus \{x\}, \{x\}$, and $B$. It should be denoted that this proving scheme does require that we can choose $h$ to be whatever the root of whatever Merkelization of $C$ makes this proving scheme work.
 
-TODO: set disjointness; set image; sequence concatenation
+Here is a description of the branch proofs in the set disjointness proving scheme. Suppose for given hashes $h_0, h_1$, we want to show there are sets $A, B$ such that $A \cap B = \emptyset$, $H(A) = h_0$, and $H(B) = h_1$. We do so by proving that there are sets $A_0, A_1, B_0, B_1$ and a set element $x$ such that:
+\begin{enumerate}
+	\item $A_0 \uplus_x A_1 = A$.
+	\item $B_0 \uplus_x B_1 = B$.
+	\item $A_0 \cap B_0 = \emptyset$.
+	\item $A_1 \cap B_1 = \emptyset$.
+\end{enumerate}
+These facts suffice to imply that $A \cap B = \emptyset$. If $A, B$ are nonempty and $A \cap B = \emptyset$, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $A \cap B = \emptyset$ to two smaller set disjointness proving problems.
+
+Here is a description of the branch proofs in the set image proving scheme. Suppose for given hashes $h_0, h_1$, we want to show there are sets $A, B$ such that $f(A) = B$, $H(A) = h_0$, and $H(B) = h_1$. We do so by proving that there are sets $A_0, A_1, B_0, B_1$ and a set element $x$ such that:
+\begin{enumerate}
+	\item $A_0 \uplus_x A_1 = A$.
+	\item $B_0 \uplus_x B_1 = B$.
+	\item $f(A_0) = B_0$.
+	\item $f(A_1) = B_1$.
+	\item $B_0 \cup B_1 = B$.
+\end{enumerate}
+These facts suffice to imply that $f(A) = B$. If $A$ is nonempty and $f(A) = B$, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $f(A) = B$ to two smaller set image proving problems.
+
+TODO: sequence concatenation
 
 The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
 
