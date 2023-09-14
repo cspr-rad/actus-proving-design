@@ -104,6 +104,42 @@ Let $H$ be a collision-resistant, 256-bit hash function. When we apply $H$ to an
 
 There can be more than one valid way of Merkelizing an object. Consider for example an event sequence $e = e_0 \smallfrown e_1 \smallfrown e_2 \smallfrown e_3$. This could be Merkelized as $H((H(e_0 \smallfrown e_1), H(e_2 \smallfrown e_3)))$, or alternately as $H((H(e_0), H(e_1 \smallfrown e_2 \smallfrown e_3)))$, or $H((H((H(e_0), H(e_1))), H((H(e_2), H(e_3)))))$. These are just a few of the alternatives. The reason for allowing such flexibility is to provide degrees of freedom in how recursive proofs (which are about to be described) may be composed. The end result is that there is not a unique valid hash for a given object, which is ultimately okay.
 
+The ZK proving system requires some primitives for recursively proving facts about sets and sequences. Specifically, we need to be able to prove facts of the following forms:
+
+\begin{enumerate}
+	\item For sets $A, B, C$, $A \cup B = C$.
+	\item For sets $A, B$, $A \cap B = \emptyset$.
+	\item For sets $A, B$ and partial computable functions $f$, $f(A) = B$.\footnote{$f(A)$ denotes the image of the set $A$ under the function $f$, i.e., $\{f(a) | a \in A\}$.}
+	\item For sequences $e, e_0, e_1$, $e = e_0 \smallfrown e_1$.
+\end{enumerate}
+
+The motivation for being able to recursively prove such facts is to be able to deal with sets and sequences that are larger than what we can deal with directly in a single proof. In particular, we wish to prove statements of the following forms:
+
+\begin{enumerate}
+	\item For hashes $h, h_0, h_1$, there are sets $A, B, C$ such that $A \cup B = C$, $H(C) = h$, $H(A) = h_0$, and $H(B) = h_1$.
+	\item For hashes $h_0, h_1$, there are sets $A, B$ such that $A \cap B = \emptyset$, $H(A) = h_0$, and $H(B) = h_1$.
+	\item For hashes $h_0, h_1$, there are sets $A, B$ such that $f(A) = B$, $h(A) = h_0$, and $h(B) = h_1$. (This statement form is for a fixed function $f$.)
+	\item For hashes $h, h_0, h_1$, there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$.
+\end{enumerate}
+
+For each of these statements forms, there is an applicable recursive proof scheme. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by proving the execution of a computation which directly verifies the statement. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
+
+Let $\uplus$ be a partial computable function of two sets and a set element, defined as follows. For interpreting applications of $\uplus$, there is implied to be a total ordering relation which applies to set elements. An application of $\uplus$ will be denoted by $A \uplus_x B$, where $A, B$ are the sets and $x$ is the set element. $x$ is called the pivot element. $A \uplus_x B$ is equal to $A \cup B$, if and only if $a \leq x$ for all $a \in A$ and $x < b$ for all $b \in B$. Otherwise, $A \uplus_x B$ is undefined.
+
+Here is a description of the branch proofs in the set union recursive proving scheme. Suppose for given hashes $h, h_0, h_1$, we want to show there are sets $A, B, C$ such that $A \cup B = C$, $H(C) = h$, $H(A) = h_0$, and $H(B) = h_1$. We do so by proving that there are sets $A_0, A_1, B_0, B_1, C_0, C_1$ and a set element $x$ such that:
+\begin{enumerate}
+	\item $A_0 \uplus_x A_1 = A$.
+	\item $B_0 \uplus_x B_1 = B$.
+	\item $C_0 \uplus_x C_1 = C$.
+	\item $A_0 \cup B_0 = C_0$.
+	\item $A_1 \cup B_1 = C_1$.
+\end{enumerate}
+These facts suffice to imply that $A \cup B = C$. If $A \cup B = C$ and $A, B, C$ are nonempty, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $A \cup B = C$ to two smaller set union proving problems. Those smaller set union proving problems can be proven in ZK and their proofs verified recursively.
+
+This proving scheme for set unions requires a system for succinctly verifying facts of the form $A \uplus_x B = C$. Specifically, this can be done by succinctly verifying statements of the form: for given $h, h_0, h_1, h_x$, there are sets $A, B, C$ and a set element $x$ such that $A \uplus_x B = C$, $H(A) = h_0$, $H(B) = h_1$, $H(C) = h$, and $H(x) = h_x$. Such a statement can be verified in $O(1)$ when sets are Merkelized, because it just requires that $h$ be the root of a Merkelization of $C$ which decomposes $C$ into $A \setminus \{x\}, \{x\}$, and $B$. It should be denoted that this proving scheme does require that we can choose $h$ to be whatever the root of whatever Merkelization of $C$ makes this proving scheme work.
+
+TODO: set disjointness; set image; sequence concatenation
+
 The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
 
 \begin{enumerate}
