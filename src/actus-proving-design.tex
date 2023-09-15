@@ -36,6 +36,8 @@ To make this lattice structure well defined requires some understanding of the i
 
 Let $\vee$ denote the join operation of any join semilattice (which join semilattice being specified by context). Let $\wedge$ denote the meet operation of any meet semilattice (which meet semilattice being specified by context).
 
+Let $\text{id}$ be a function which maps an element of a term set (i.e., a representation of a single contract) to the globally unique contract identifier of the contract. For $t \in T$, $\text{id}(t)$ denotes the image of the set $t$ under the id function, which is in other words the set of identifiers of the contracts in $t$.
+
 Let there be a total computable function $\text{coherent} : T \to \{0,1\}$ which outputs $1$ on all and only the coherent term sets, i.e., those term sets satisfying the coherence conditions for term sets of the ACTUS contract types.
 
 Let $E$ be a set of event sequences. An element of $E$ describes zero or more timestamped events which may affect the states of contracts.
@@ -104,6 +106,8 @@ Let $H$ be a collision-resistant, 256-bit hash function. When we apply $H$ to an
 
 There can be more than one valid way of Merkelizing an object. Consider for example an event sequence $e = e_0 \smallfrown e_1 \smallfrown e_2 \smallfrown e_3$. This could be Merkelized as $H((H(e_0 \smallfrown e_1), H(e_2 \smallfrown e_3)))$, or alternately as $H((H(e_0), H(e_1 \smallfrown e_2 \smallfrown e_3)))$, or $H((H((H(e_0), H(e_1))), H((H(e_2), H(e_3)))))$. These are just a few of the alternatives. The reason for allowing such flexibility is to provide degrees of freedom in how recursive proofs (which are about to be described) may be composed. The end result is that there is not a unique valid hash for a given object, which is ultimately okay.
 
+TODO: proving scheme for equality of Merkelizations
+
 The ZK proving system requires some primitives for recursively proving facts about sets and sequences. Specifically, we need to be able to prove facts of the following forms:
 
 \begin{enumerate}
@@ -157,7 +161,7 @@ Here is a description of the branch proofs in the set image proving scheme. Supp
 \end{enumerate}
 These facts suffice to imply that $f(A) = B$. If $A$ is nonempty and $f(A) = B$, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $f(A) = B$ to two smaller set image proving problems.
 
-TODO: sequence concatenation
+The sequence concatenation proving scheme wants to show, for given $h, h_0, h_1$, that there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$. It works by Merkelizing $e$ in such a fashion that $h = H((h_0, h_1))$. This scheme requires being able to choose $h$ to be the one that makes this scheme work, out of all of the different ways of Merkleizing $e$.
 
 The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
 
@@ -172,14 +176,14 @@ For each of these statement forms, there is an applicable recursive proof scheme
 
 Although branch proofs are described below with exactly two children, the descriptions can be extended in a straightforward manner to allow for branching factors greater than two.
 
-A branch proof of $\text{coherent}(t) = 1$ verifies that there are some $t_0, t_1 \in T$ such that $t_0 \vee t_1 = t$, $\text{coherent}(t_0) = 1$, and $\text{coherent}(t_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $t_i$. TODO: it also needs to verify that contract identifiers are globally unique, which implies that $t_0, t_1$ are disjoint
+A branch proof of $\text{coherent}(t) = 1$ verifies that there are some $t_0, t_1 \in T$ such that $t_0 \vee t_1 = t$, $\text{coherent}(t_0) = 1$, $\text{coherent}(t_1) = 1$, and $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $t_i$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_0)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$).
 
-A branch proof of $\text{applies}(t, c) = 1$ verifies that there are some $t_0, t_1 \in T$ and $c_0, c_1 \in C$ such that $t_0 \vee t_1 = t$ and $c_0 \oplus c_1 = c$, such that $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_i)$. TODO: also needs to verify that $t_0, t_1$ are disjoint
+A branch proof of $\text{applies}(t, c) = 1$ verifies that there are some $t_0, t_1 \in T$ and $c_0, c_1 \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, and $c_0 \oplus c_1 = c$, such that $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_i)$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). TODO: $\oplus$ proving scheme
 
 TODO: schedule branch proofs; need to define regularity in schedules to make this possible
 
-A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ verifies that there are some $t_0, t_1 \in T$ and $c_{0,0}, c_{0,1}, c_{1,0}, c_{1,1} \in C$ such that $t_0 \vee t_1 = t$ and $c_{0,0} \oplus c_{0,1} = c_0$ and $c_{1,0} \oplus c_{1,1} = c_1$ and $\text{update}(t_0, c_{0,0}, e) = c_{1,0}$ and $\text{update}(t_1, c_{0,1}, e) = c_{1,1}$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_{0,i}, e, c_{1,i})$. TODO: also needs to verify that $t_0, t_1$ are disjoint
+A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ verifies that there are some $t_0, t_1 \in T$ and $c_{0,0}, c_{0,1}, c_{1,0}, c_{1,1} \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, $c_{0,0} \oplus c_{0,1} = c_0$, $c_{1,0} \oplus c_{1,1} = c_1$, $\text{update}(t_0, c_{0,0}, e) = c_{1,0}$, and $\text{update}(t_1, c_{0,1}, e) = c_{1,1}$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_{0,i}, e, c_{1,i})$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). TODO: $\oplus$ proving scheme
 
-A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t, c_i, e_i, c_{1+i})$. TODO: how to prove event sequence concatenation?
+A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t, c_i, e_i, c_{1+i})$. This proving scheme makes use of the sequence concatenation proving scheme.
 
 \end{document}
