@@ -62,9 +62,11 @@ Let there be a partial computable function $\smallfrown\ : E \times E \to E$ whi
 	\text{range}(e_0 \smallfrown e_1) = \text{range}(e_0) \vee \text{range}(e_1).
 \end{equation}
 
-Let $C$ be a set of contract states. An element of $C$ represents the states of all contracts in an element of $T$, at some point in time. 
+Let $C$ be a set of multi-contract states. An element of $C$ represents the states of all contracts in an element of $T$, at some point in time. 
 
 Let there be a total computable function $\text{asOf} : C \to \mathbb{Q}$ which gives the Unix timestamp which a state $c \in C$ is as of.
+
+% Let there be a total computable function stateContract which maps a contract state to the id of the contract it is a state of. For an element $c \in C$, let $\text{stateContract}(c)$ denote the image of stateOf on $c$, thinking of $c$ as a set; this is in other words the set of identifiers of contracts which $c$ describes the state of.
 
 Let there be a partial computable function $\text{initial} : T \to C$, giving the initial states of all contracts in an element of $T$. initial should be defined on all and only the coherent elements of $T$, i.e., those $t \in T$ such that $\text{coherent}(t) = 1$.
 
@@ -126,7 +128,7 @@ The motivation for being able to recursively prove such facts is to be able to d
 	\item For hashes $h, h_0, h_1$, there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$.
 \end{enumerate}
 
-For each of these statements forms, there is an applicable recursive proof scheme. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by proving the execution of a computation which directly verifies the statement. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
+For each of these statement forms, there is an applicable recursive proof scheme. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by proving the execution of a computation which directly verifies the statement. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
 
 Let $\uplus$ be a partial computable function of two sets and a set element, defined as follows. For interpreting applications of $\uplus$, there is implied to be a total ordering relation which applies to set elements. An application of $\uplus$ will be denoted by $A \uplus_x B$, where $A, B$ are the sets and $x$ is the set element. $x$ is called the pivot element. $A \uplus_x B$ is equal to $A \cup B$, if and only if $a \leq x$ for all $a \in A$ and $x < b$ for all $b \in B$. Otherwise, $A \uplus_x B$ is undefined.
 
@@ -161,7 +163,7 @@ Here is a description of the branch proofs in the set image proving scheme. Supp
 \end{enumerate}
 These facts suffice to imply that $f(A) = B$. If $A$ is nonempty and $f(A) = B$, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $f(A) = B$ to two smaller set image proving problems.
 
-The sequence concatenation proving scheme wants to show, for given $h, h_0, h_1$, that there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$. It works by Merkelizing $e$ in such a fashion that $h = H((h_0, h_1))$. This scheme requires being able to choose $h$ to be the one that makes this scheme work, out of all of the different ways of Merkleizing $e$.
+The sequence concatenation proving scheme wants to show, for given $h, h_0, h_1$, that there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$. It works by Merkelizing $e$ in such a fashion that $h = H((h_0, h_1))$. This scheme requires being able to choose $h$ to be the one that makes this scheme work, out of all of the different ways of Merkelizing $e$.
 
 The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
 
@@ -178,12 +180,22 @@ Although branch proofs are described below with exactly two children, the descri
 
 A branch proof of $\text{coherent}(t) = 1$ verifies that there are some $t_0, t_1 \in T$ such that $t_0 \vee t_1 = t$, $\text{coherent}(t_0) = 1$, $\text{coherent}(t_1) = 1$, and $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $t_i$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_0)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$).
 
-A branch proof of $\text{applies}(t, c) = 1$ verifies that there are some $t_0, t_1 \in T$ and $c_0, c_1 \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, and $c_0 \oplus c_1 = c$, such that $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_i)$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). TODO: $\oplus$ proving scheme
+A branch proof of $\text{applies}(t, c) = 1$ verifies that there are some $t_0, t_1 \in T$ and $c_0, c_1 \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, and $c_0 \oplus c_1 = c$, such that $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_i)$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). This proving scheme also requires a proving scheme for proving instances of $c = c_0 \oplus c_1$.
+
+Next, let's look at a recursive proving scheme for proving instances of $c = c_0 \oplus c_1$, for $c, c_0, c_1 \in C$. Specifically, this scheme will prove statements of the following form. For given $h, h_0, h_1$, there are $c, c_0, c_1 \in C$ such that $c = c_0 \oplus c_1$, $H(c) = h$, $H(c_0) = h_0$, and $H(c_1) = h_1$.
+
+Recall that for $c = c_0 \oplus c_1$ to be true, the following conditions are necessary and sufficient: there are $t_0, t_1 \in T$ such that $\text{applies}(t_0, c_0) = 1$, $\text{applies}(t_1, c_1) = 1$, $t_0 \wedge t_1 = \emptyset_T$, and $\text{asOf}(c_0) = \text{asOf}(c_1)$. The statement $\text{asOf}(c_0) = \text{asOf}(c_1)$ is assumed to be directly verifiable in $O(1)$, by opening the Merkelizations of $c_0$ and $c_1$ to a constant depth to read the value of a timestamp field on the structures. The other elements of the conditions for $c = c_0 \oplus c_1$ can be proven and succinctly verified using methods already defined.
+
+There is a circularity in the definitions of the recursive proving schemes for applies and $\oplus$, since each references the other. This is okay, because the proving scheme for each one references the proving scheme for the other one with respect to smaller subproblems only; so it does not lead to an infinite regress.
 
 TODO: schedule branch proofs; need to define regularity in schedules to make this possible
+
+For branch (i.e., recursive) proofs of instances of $\text{update}(t, c_0, e) = c_1$, there are two kinds: the vertically sliced and horizontally sliced kinds. The vertically sliced kind decompose the problem into smaller subproblems by reducing the number of contracts involved. The horizontally sliced kind decompose the problem into smaller subproblems by reducing the number of events involved.
 
 A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ verifies that there are some $t_0, t_1 \in T$ and $c_{0,0}, c_{0,1}, c_{1,0}, c_{1,1} \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, $c_{0,0} \oplus c_{0,1} = c_0$, $c_{1,0} \oplus c_{1,1} = c_1$, $\text{update}(t_0, c_{0,0}, e) = c_{1,0}$, and $\text{update}(t_1, c_{0,1}, e) = c_{1,1}$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t_i, c_{0,i}, e, c_{1,i})$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). TODO: $\oplus$ proving scheme
 
 A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkelization of $(t, c_i, e_i, c_{1+i})$. This proving scheme makes use of the sequence concatenation proving scheme.
+
+TODO: can we be more intelligent about considering which events matter for which contracts or is that a lost cause?
 
 \end{document}
