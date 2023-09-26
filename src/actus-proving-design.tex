@@ -22,21 +22,23 @@ This document outlines a general structure for an ACTUS proving system. The goal
 
 This structure is independent of the specifics of the ACTUS contract type. It is meant to apply to all existing and future ACTUS contract types, as long as some particular fundamentals of the ACTUS information architecture remain the same.
 
-This structure does not assume any particular proving system. It assumes is a zero knowledge virtual machine which can prove the results of executing pure, partial computable functions. Also, it assumes that this zk-VM is capable of recursive proofs.
+This structure does not assume any particular proving system. It assumes a zero knowledge virtual machine which can prove the results of executing pure, partial computable functions, with constant upper bounds on the time and space complexity of individual executions. Also, it assumes that this zk-VM is capable of recursive proofs, i.e., that the zk-VM can verify its own execution proofs.
 
 The scope of this design includes proving facts about individual contracts, and also heterogeneous portfolios of contracts. The cases of individual contracts and portfolios of contracts are addressed within the same structure.
+
+\section{Definitions and laws}
 
 Let $T$ be a set of contract term sets. An element of $T$ describes the terms of zero or more contracts, including any referential relationships between the contracts.
 
 Let $T$ have a lattice structure with a bottom element. This means in other words that there is partial ordering on $T$ such that $T$ is a meet semilattice (every pair of elements has a greatest lower bound), $T$ is a join semilattice (every pair of elements has a least upper bound), and there is an element $\emptyset_T \in T$ such that for all $a \in T$, $\emptyset_T \leq a$.
 
-The idea of this lattice structure is that the join of a pair of elements $t_0, t_1 \in T$ contains all of the contracts in $t_0$ and all of the contracts in $t_1$, whereas the meet of a pair of elements contains all of the contracts that are in both $t_0$ and $t_1$. The bottom element $\emptyset_T$ consists of zero contracts.
+The idea of this lattice structure is that the join of a pair of elements $t_0, t_1 \in T$ contains all of the contracts in $t_0$ and all of the contracts in $t_1$, whereas the meet of a pair of elements contains all of the contracts that are in both $t_0$ and $t_1$. The bottom element $\emptyset_T$ consists of zero contracts. If we think of elements of $T$ as sets of contracts, then join is set union, and meet is set intersection.
 
-To make this lattice structure well defined requires some understanding of the identity conditions of contracts: i.e., when are two contracts the same? It seems to be possible for two contracts to have exactly the same terms, parties, inception date, etc., and to be different only in that they are distinct. Therefore, defining the identity conditions of contracts should rely on assigning a globally unique identifier to each contract. For example, the globally unique identifier of a contract can be a pair of (the unique identifier of) the issuing institution and a serial number. For two contracts to be considered identical, they must have the same globally unique identifier but also the same terms, parties, inception date, etc.
+To make this lattice structure well defined requires some understanding of the identity conditions of contracts: i.e., when are two contracts the same? It seems to be possible for two contracts to have exactly the same terms, parties, inception date, etc., such that the contracts are different only in that they are distinct, otherwise identical. Therefore, defining the identity conditions of contracts may rely on assigning a globally unique identifier to each contract. For example, the globally unique identifier of a contract can be a pair of (the unique identifier of) the issuing institution and a serial number. For two contracts to be considered identical, they must have the same globally unique identifier but also the same terms, parties, inception date, etc. This note assumes that contracts have globally unique identifiers, such as in the manner described.
 
 Let $\vee$ denote the join operation of any join semilattice (which join semilattice being specified by context). Let $\wedge$ denote the meet operation of any meet semilattice (which meet semilattice being specified by context).
 
-Let $\text{id}$ be a function which maps an element of a term set (i.e., a representation of a single contract) to the globally unique contract identifier of the contract. For $t \in T$, $\text{id}(t)$ denotes the image of the set $t$ under the id function, which is in other words the set of identifiers of the contracts in $t$.
+Let $\text{id}$ be a function which maps an element of a term set (i.e., a representation of a single contract) to the globally unique contract identifier of the contract. For $t \in T$, $\text{id}(t)$ denotes the image of the set of contracts in $t$ under the id function, which is in other words the set of identifiers of the contracts in $t$.
 
 Let there be a total computable function $\text{coherent} : T \to \{0,1\}$ which outputs $1$ on all and only the coherent term sets, i.e., those term sets satisfying the coherence conditions for term sets of the ACTUS contract types.
 
@@ -103,6 +105,10 @@ The following laws should be true:
 The laws ensure that the state transitions have the same results regardless of how finely we slice an event sequence and how many times we apply the update function. They also ensure that the state transitions have the same results when they act on portfolios as when they act on slices of those portfolios, up to and including individual contracts within those portfolios.
 
 Let there be a partial computable function $\text{schedule} : T \times C \to E$. This function takes a pair $(t, c)$ of contracts and states. It returns a canonical event sequence which would fulfill all of the contracts $t$ starting from states $c$. $\text{schedule}(t, c)$ is defined if and only if $\text{applies}(t, c) = 1$.
+
+TODO: laws of schedule
+
+\section{Cryptographic primitives}
 
 Let $H$ be a collision-resistant, 256-bit hash function. When we apply $H$ to an object, let it denote the result of Merkleizing the object, i.e., transforming the object into the root of a Merkle hash tree using the hash function $H$. This process should allow each piece of the object being serialized to be verified using a Merkle opening proof.
 
@@ -171,6 +177,8 @@ These facts suffice to imply that $f(A) = B$. If $A$ is nonempty and $f(A) = B$,
 
 The sequence concatenation proving scheme wants to show, for given $h, h_0, h_1$, that there are sequences $e, e_0, e_1$ such that $e = e_0 \smallfrown e_1$, $H(e) = h$, $H(e_0) = h_0$, and $H(e_1) = h_1$. It works by Merkleizing $e$ in such a fashion that $h = H((h_0, h_1))$. This scheme requires being able to choose $h$ to be the one that makes this scheme work, out of all of the different ways of Merkleizing $e$.
 
+\section{Proof schemes}
+
 The ZK proving system needs to prove statements of the following forms. For each of these forms, the instance data consists of the hash $h$.
 
 \begin{enumerate}
@@ -202,6 +210,8 @@ A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ ve
 
 A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkleization of $(t, c_i, e_i, c_{1+i})$. This proving scheme makes use of the sequence concatenation proving scheme.
 
-TODO: can we be more intelligent about considering which events matter for which contracts or is that a lost cause? Currently best case proving complexity is $O(nm)$ in $n$ the number of contracts and $m$ the number of events
+\section{Future directions}
+
+Can we be more intelligent about considering which events matter for which contracts? Currently the best possible worst case proving complexity of this scheme is $O(n \times m)$ in $n$ the number of contracts and $m$ the number of events. For global events, such as interest rate changes, this may be the best possible worst case proving complexity, because if $O(n)$ contracts are impacted by an event then $O(n)$ many contract schedules need to be recomputed upon such an event. However, plausibly, most events impact only a small number of contracts, typically only a single one. The proving scheme could be refined to allow for events that impact a limited subset of contracts to be run over only a subset of all contracts containing the impacted subset.
 
 \end{document}
