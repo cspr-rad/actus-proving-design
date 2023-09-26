@@ -110,7 +110,7 @@ The following laws should be true:
 		\begin{equation}
 			\text{update}(t_0 \vee t_1, c_0 \oplus c_1, e) = \text{update}(t_0, c_0, e) \oplus \text{update}(t_1, c_1, e).
 		\end{equation}
-		\item If $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$, and $c_0 \oplus c_1 = c$, and $t_0 \vee t_1 = t$, then:
+		\item If $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$, and $c_0 \oplus c_1$ is defined, and $t_0 \vee t_1 = t$, then:
 		\begin{equation}
 		\text{schedule}(t_0, c_0) \vee \text{schedule}(t_1, c_1) = \text{schedule}(t_0 \vee t_1, c_0 \oplus c_1).
 		\end{equation}
@@ -218,7 +218,25 @@ A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ ve
 
 A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkleization of $(t, c_i, e_i, c_{1+i})$. This proving scheme makes use of the sequence concatenation proving scheme.
 
-TODO: schedule branch proofs; need to define regularity in schedules to make this possible
+Finally, let's look at a recursive proving scheme for proving instances of $\text{schedule}(t, c) = e$. Specifically, this scheme will prove statements of the following form. For given $h_i, h_o$, there are $t \in T$, $c \in C$, and $e \in E$ such that $H((t, c)) = h_i$, $H(e) = h_o$, and $\text{schedule}(t, c) = e$.
+
+The branch proofs decompose the problem into smaller subproblems by splitting up the $T$ elements and $C$ elements, taking advantage of the homomorphic property of the scheduling function, that is (with suppressed premises):
+\begin{equation}
+\text{schedule}(t_0, c_0) \vee \text{schedule}(t_1, c_1) = \text{schedule}(t_0 \vee t_1, c_0 \oplus c_1).
+\end{equation}
+A branch scheduling proof verifies, for given hashes $h_i, h_o$, that there are $t, t_0, t_1 \in T$, $c, c_0, c_1 \in C$, and $e, e_0, e_1 \in E$, such that $\text{applies}(t_0, c_0) = 1$, $\text{applies}(t_1, c_1) = 1$, $t_0 \vee t_1 = t$, $c_0 \oplus c_1 = c$, $e_0 \vee e_1 = e$, $H((t, c)) = h_i$, and $H(e) = h_o$. It verifies these facts indirectly by verifying that there are hashes $h_{i,0}, h_{i,1}, h_{o,0}, h_{o,1}$ such that:
+\begin{enumerate}
+\item $h_i = H((h_{i,0}, h_{i,1}))$.
+\item $h_o = H((h_{o,0}, h_{o,1}))$.
+\item For each $k \in \{0,1\}$, $h_{i,k}$ is the root of a Merkleization of a pair $(t_k, c_k) \in T \times C$, and $h_{o,k}$ is the root of a Merkleization of an event sequence $e_k \in E$, such that:
+	\begin{enumerate}
+	\item $\text{applies}(t_k, c_k) = 1$, for each $k \in \{0,1\}$.
+	\item $\text{schedule}(t_k, c_k) = e_k$, for each $k \in \{0,1\}$.
+	\item $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$.
+	\item $e_0 \wedge e_1 = e$.
+	\end{enumerate}
+\end{enumerate}
+These facts suffice to imply the given instance. All of these facts can be proven by methods already outlined, except for $e_0 \wedge e_1 = e$, which requires a method for proving unions of event sequences. Such a method should be easy enough to devise by following the example of the set union proving scheme.
 
 \section{Future directions}
 
