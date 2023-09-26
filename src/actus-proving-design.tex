@@ -47,7 +47,7 @@ Let $E$ be a set of event sequences. An element of $E$ describes zero or more ti
 Let $I$ be the set of time intervals. An element of $I$ can be described as a closed interval $[t_0, t_1]$, where $t_0, t_1 \in \mathbb{Q}$ are rational numbers and $t_0 \leq t_1$. $t_0$ and $t_1$ represent Unix timestamps, i.e., seconds since the Unix epoch. Observe that $I$ is a meet semilattice under the following partial ordering:
 
 \begin{equation}
-	[t_0,t_1] \leq [t_2,t_3] \Leftrightarrow (t_0 \leq t_2 \vee t_1 \leq t_3).
+	[t_0,t_1] \leq [t_2,t_3] \Leftrightarrow (t_2 \leq t_0 \vee t_1 \leq t_3).
 \end{equation}
 
 Let $\leqslant$ be the partial ordering on $I$ defined as follows:
@@ -64,6 +64,14 @@ Let there be a partial computable function $\smallfrown\ : E \times E \to E$ whi
 	\text{range}(e_0 \smallfrown e_1) = \text{range}(e_0) \vee \text{range}(e_1).
 \end{equation}
 
+Let there be a join semilattice structure $\vee\ : E \times E \to E$ which joins event sequences, acting like the set union operation if we think of an event sequence as a set of events.
+
+The following event algebra laws are true, for all $e_0, e_1, e \in E$:
+\begin{enumerate}
+\item $e_0 \smallfrown e_1 = e \Rightarrow e_0 \vee e_1 = e$.
+\item $\text{range}(e_0 \vee e_1) = \text{range}(e_0) \vee \text{range}(e_1)$.
+\end{enumerate}
+
 Let $C$ be a set of multi-contract states. An element of $C$ represents the states of all contracts in an element of $T$, at some point in time. 
 
 Let there be a total computable function $\text{asOf} : C \to \mathbb{Q}$ which gives the Unix timestamp which a state $c \in C$ is as of.
@@ -79,6 +87,8 @@ Let $\pi_0 : A \times B \to A$ and $\pi_1 : A \times B \to B$ be the generic Car
 Let there be a partial computable function $\text{update} : T \times C \times E \to C$, the state transition function. This function takes as input a term set $t \in T$, a state $c \in C$, and an event sequence $e \in E$. This function is defined on an input triple $(t, c, e)$ if and only if $\text{asOf}(c) < \pi_0(\text{range}(e))$, $\text{coherent}(t) = 1$, and $\text{applies}(t, c) = 1$.
 
 Let there be a partial computable function $\oplus\ : C \times C \to C$. This function serves to combine simultaneous states for disjoint sets of contracts. This can always be done without conflict. $c_0 \oplus c_1$ is defined if and only if there are $t_0, t_1, \in T$ such that: $\text{applies}(t_0, c_0) = 1$, $\text{applies}(t_1, c_1) = 1$, $t_0 \wedge t_1 = \emptyset_T$, and $\text{asOf}(c_0) = \text{asOf}(c_1)$. If $c_0 \oplus c_1$ is defined, then the $t_0, t_1 \in T$ witnessing this fact are unique (because each state can apply only to one set of contracts).
+
+Let there be a partial computable function $\text{schedule} : T \times C \to E$. This function takes a pair $(t, c)$ of contracts and states. It returns a canonical event sequence which would fulfill all of the contracts $t$ starting from states $c$. $\text{schedule}(t, c)$ is defined if and only if $\text{applies}(t, c) = 1$.
 
 The following laws should be true:
 
@@ -100,13 +110,13 @@ The following laws should be true:
 		\begin{equation}
 			\text{update}(t_0 \vee t_1, c_0 \oplus c_1, e) = \text{update}(t_0, c_0, e) \oplus \text{update}(t_1, c_1, e).
 		\end{equation}
+		\item If $\text{applies}(t_0, c_0) = 1$, and $\text{applies}(t_1, c_1) = 1$, and $c_0 \oplus c_1 = c$, and $t_0 \vee t_1 = t$, then:
+		\begin{equation}
+		\text{schedule}(t_0, c_0) \vee \text{schedule}(t_1, c_1) = \text{schedule}(t_0 \vee t_1, c_0 \oplus c_1).
+		\end{equation}
 \end{enumerate}
 
 The laws ensure that the state transitions have the same results regardless of how finely we slice an event sequence and how many times we apply the update function. They also ensure that the state transitions have the same results when they act on portfolios as when they act on slices of those portfolios, up to and including individual contracts within those portfolios.
-
-Let there be a partial computable function $\text{schedule} : T \times C \to E$. This function takes a pair $(t, c)$ of contracts and states. It returns a canonical event sequence which would fulfill all of the contracts $t$ starting from states $c$. $\text{schedule}(t, c)$ is defined if and only if $\text{applies}(t, c) = 1$.
-
-TODO: laws of schedule
 
 \section{Cryptographic primitives}
 
@@ -202,13 +212,13 @@ Recall that for $c = c_0 \oplus c_1$ to be true, the following conditions are ne
 
 There is a circularity in the definitions of the recursive proving schemes for applies and $\oplus$, since each references the other. This is okay, because the proving scheme for each one references the proving scheme for the other one with respect to smaller subproblems only; so it does not lead to an infinite regress.
 
-TODO: schedule branch proofs; need to define regularity in schedules to make this possible
-
 For branch (i.e., recursive) proofs of instances of $\text{update}(t, c_0, e) = c_1$, there are two kinds: the vertically sliced and horizontally sliced kinds. The vertically sliced kind decompose the problem into smaller subproblems by reducing the number of contracts involved. The horizontally sliced kind decompose the problem into smaller subproblems by reducing the number of events involved.
 
 A \emph{vertically sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_1$ verifies that there are some $t_0, t_1 \in T$ and $c_{0,0}, c_{0,1}, c_{1,0}, c_{1,1} \in C$ such that $t_0 \vee t_1 = t$, $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$, $c_{0,0} \oplus c_{0,1} = c_0$, $c_{1,0} \oplus c_{1,1} = c_1$, $\text{update}(t_0, c_{0,0}, e) = c_{1,0}$, and $\text{update}(t_1, c_{0,1}, e) = c_{1,1}$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkleization of $(t_i, c_{0,i}, e, c_{1,i})$. This proving scheme makes use of the proving schemes for set union (to prove $t_0 \vee t_1 = t$), set image under id (to prove the values of $\text{id}(t_0)$ and $\text{id}(t_1)$), and set disjointness (to prove $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$). It also makes use of the $\oplus$ proving scheme.
 
 A \emph{horizontally sliced}\/ branch proof of $\text{update}(t, c_0, e) = c_2$ verifies that there are some $e_0, e_1 \in E$ and $c_1 \in C$ such that $e = e_0 \smallfrown e_1$, and $\text{update}(t, c_0, e_0) = c_1$, and $\text{update}(t, c_1, e_1) = c_2$. The instance data in this case is $H((h_0, h_1))$, where $h_i$ is the Merkleization of $(t, c_i, e_i, c_{1+i})$. This proving scheme makes use of the sequence concatenation proving scheme.
+
+TODO: schedule branch proofs; need to define regularity in schedules to make this possible
 
 \section{Future directions}
 
