@@ -144,6 +144,14 @@ For hashes $h_0, h_1$, let $h_0 \equiv h_1$ denote the proposition that $h_0$ an
 
 Figure~\ref{fig:merkle-equality} depicts the recursive (i.e., branch) cases of the proof scheme for instances of $h_0 \equiv h_1$. There are two different cases to consider, distinguished by whether $h_0$ and $h_1$ have the same pivot element, or different pivot elements. A pivot element of a Merkleization with root $h$ of an object $a \in A$ is any $i \in I$ such that $h = H((h_0, h_1))$ for some $h_0, h_1$ such that $h_0$ is the root of a Merkleization of $a|_i$ and $h_1$ is the root of a Merkleization of $a|^i$. This proof scheme assumes, as previously stated, that every non-leaf Merkleization has a pivot element; such a pivot element need not be unique. To prove $h_0 \equiv h_1$ where $h_0$ and $h_1$ are roots of non-leaf Merkleizations, one can use the non-recursive case of the proof scheme (if the Merkleizations are small enough to satisfy the time and space bounds of the zk-VM), or one can use any applicable recursive case of the proof scheme. At least one of the two recursive cases will be applicable to two non-leaf Merkleizations, and in some cases both will be applicable.
 
+To prove that $h_0 \equiv h_1$ recursively, where $h_0$ and $h_1$ are the roots of non-leaf Merkleizations of the same object, both with the same pivot element $i$, it suffices to show that there are hashes $h_{0,0},$ $h_{0,1},$ $h_{1,0}$ and $h_{1,1}$, such that:
+\begin{enumerate}
+\item $h_0 = H((h_{0,0}, h_{0,1}))$, that is, $h_{0,0}$ and $h_{0,1}$ are the Merkle hashes of the immediate children of the root of the object denoted by $h_0$ (with high probability, if $h_0$ is the root Merkle hash of a non-leaf object);
+\item $h_1 = H((h_{1,0}, h_{1,1}))$, that is, $h_{1,0}$ and $h_{1,1}$ are the Merkle hashes of the immediate children of the root of the object denoted by $h_1$ (w.h.p., if $h_1$ is the root Merkle hash of a non-leaf object);
+\item $h_{0,0} \equiv h_{1,0}$ and $h_{0,1} \equiv h_{1,1}$; that is, the left children of $h_0$ and $h_1$ are hashes denoting the same object, and the right children of $h_0$ and $h_1$ are hashes denoting the same object.
+\end{enumerate}
+The recursive zk-VM computation proving $h_0 \equiv h_1$, using the same pivot element $i$, directly verifies claims (1) and (2), and verifies SNARKs output by the proving process run over itself in order to probabilistically verify claims (3). 
+
 TODO: proving scheme for equality of Merkleizations
 
 \subsection{Set and sequence proof schemes}
