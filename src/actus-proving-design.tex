@@ -76,8 +76,6 @@ Let $C$ be a set of multi-contract states. An element of $C$ represents the stat
 
 Let there be a total computable function $\text{asOf} : C \to \mathbb{Q}$ which gives the Unix timestamp which a state $c \in C$ is as of.
 
-% Let there be a total computable function stateContract which maps a contract state to the id of the contract it is a state of. For an element $c \in C$, let $\text{stateContract}(c)$ denote the image of stateOf on $c$, thinking of $c$ as a set; this is in other words the set of identifiers of contracts which $c$ describes the state of.
-
 Let there be a partial computable function $\text{initial} : T \to C$, giving the initial states of all contracts in an element of $T$. initial should be defined on all and only the coherent elements of $T$, i.e., those $t \in T$ such that $\text{coherent}(t) = 1$.
 
 Let there be a total computable function $\text{applies} : T \times C \to \{0,1\}$, which outputs 1 on an input pair $(t, c)$ if and only if $c$ makes sense as a description of the states of the contracts in $t$, meaning that $c$ describes the states of all of the contracts in $t$ and no other contracts.
@@ -122,7 +120,7 @@ The laws ensure that the state transitions have the same results regardless of h
 
 Let $H$ be a collision-resistant, 256-bit hash function. When we apply $H$ to an object, let it denote the result of Merkleizing the object, i.e., transforming the object into the root of a Merkle hash tree using the hash function $H$. This process should allow each piece of the object being serialized to be verified using a Merkle opening proof.
 
-There can be more than one valid way of Merkleizing an object. Consider for example an event sequence $e = e_0 \smallfrown e_1 \smallfrown e_2 \smallfrown e_3$. This could be Merkleized as $H((H(e_0 \smallfrown e_1), H(e_2 \smallfrown e_3)))$, or alternately as $H((H(e_0), H(e_1 \smallfrown e_2 \smallfrown e_3)))$, or $H((H((H(e_0), H(e_1))), H((H(e_2), H(e_3)))))$. These are just a few of the alternatives. The reason for allowing such flexibility is to provide degrees of freedom in how recursive proofs (which are about to be described) may be composed. The end result is that there is not a unique valid hash for a given object, which is ultimately okay.
+There can be more than one valid way of Merkleizing an object. Consider for example an event sequence $e = e_0 \smallfrown e_1 \smallfrown e_2 \smallfrown e_3$. This could be Merkleized as $H((H(e_0 \smallfrown e_1), H(e_2 \smallfrown e_3)))$, or alternately as $H((H(e_0), H(e_1 \smallfrown e_2 \smallfrown e_3)))$, or $H((H((H(e_0), H(e_1))), H((H(e_2), H(e_3)))))$. These are just a few of the alternatives. The reason for allowing such flexibility is to provide degrees of freedom in how recursive proofs (which are about to be described) may be composed. The end result is that there may be more than one valid Merkle root hash for an object.
 
 \subsection{Equality proofs for Merkleized objects}
 
@@ -142,7 +140,7 @@ For hashes $h_0, h_1$, let $h_0 \equiv h_1$ denote the proposition that $h_0$ an
 \label{fig:merkle-equality}
 \end{figure}
 
-Figure~\ref{fig:merkle-equality} depicts the recursive (i.e., branch) cases of the proof scheme for instances of $h_0 \equiv h_1$. There are two different cases to consider, distinguished by whether $h_0$ and $h_1$ have the same pivot element, or different pivot elements. A pivot element of a Merkleization with root $h$ of an object $a \in A$ is any $i \in I$ such that $h = H((h_0, h_1))$ for some $h_0, h_1$ such that $h_0$ is the root of a Merkleization of $a|_i$ and $h_1$ is the root of a Merkleization of $a|^i$. This proof scheme assumes, as previously stated, that every non-leaf Merkleization has a pivot element; such a pivot element need not be unique. To prove $h_0 \equiv h_1$ where $h_0$ and $h_1$ are roots of non-leaf Merkleizations, one can use the non-recursive case of the proof scheme (if the Merkleizations are small enough to satisfy the time and space bounds of the zk-VM), or one can use any applicable recursive case of the proof scheme. At least one of the two recursive cases will be applicable to two non-leaf Merkleizations, and in some cases both will be applicable.
+Figure~\ref{fig:merkle-equality} depicts the recursive (i.e., branch) cases of the proof scheme for instances of $h_0 \equiv h_1$. There are two different cases to consider, distinguished by whether $h_0$ and $h_1$ have the same pivot element, or different pivot elements. A pivot element of a Merkleization with root $h$ of an object $a \in A$ is any $i \in I$ such that $h = H((h_0, h_1))$ for some $h_0, h_1$ such that $h_0$ is the root of a Merkleization of $a|_i$ and $h_1$ is the root of a Merkleization of $a|^i$. This proof scheme assumes, as previously stated, that every non-leaf Merkleization has a pivot element; such a pivot element need not be unique. To prove $h_0 \equiv h_1$ where $h_0$ and $h_1$ are roots of non-leaf Merkleizations, one can use the non-recursive case of the proof scheme (if the Merkleizations are small enough to satisfy the time and space bounds of a single zk-VM execution), or one can use any applicable recursive case of the proof scheme. At least one of the two recursive cases will be applicable to two non-leaf Merkleizations, and in some cases both will be applicable.
 
 To prove that $h_0 \equiv h_1$ recursively, where $h_0$ and $h_1$ are the roots of non-leaf Merkleizations of the same object, both with the same pivot element $i$, it suffices to show that there are hashes $h_{0,0},$ $h_{0,1},$ $h_{1,0}$ and $h_{1,1}$, such that:
 \begin{enumerate}
@@ -150,9 +148,23 @@ To prove that $h_0 \equiv h_1$ recursively, where $h_0$ and $h_1$ are the roots 
 \item $h_1 = H((h_{1,0}, h_{1,1}))$, that is, $h_{1,0}$ and $h_{1,1}$ are the Merkle hashes of the immediate children of the root of the object denoted by $h_1$ (w.h.p., if $h_1$ is the root Merkle hash of a non-leaf object);
 \item $h_{0,0} \equiv h_{1,0}$ and $h_{0,1} \equiv h_{1,1}$; that is, the left children of $h_0$ and $h_1$ are hashes denoting the same object, and the right children of $h_0$ and $h_1$ are hashes denoting the same object.
 \end{enumerate}
-The recursive zk-VM computation proving $h_0 \equiv h_1$, using the same pivot element $i$, directly verifies claims (1) and (2), and verifies SNARKs output by the proving process run over itself in order to probabilistically verify claims (3). 
+The recursive zk-VM computation proving $h_0 \equiv h_1$, using the same pivot element $i$, directly verifies claims (1) and (2), and verifies SNARKs output by the proving process run over itself in order to probabilistically verify claims (3). This shows how we can reduce the problem of proving an instance of $h_0 \equiv h_1$ to two smaller instances, providing a recursive proving scheme. The upper diagram in Figure~\ref{fig:merkle-equality} depicts what this says.
 
-TODO: proving scheme for equality of Merkleizations
+To prove that $h_0 \equiv h_1$ recursively, where $h_0$ and $h_1$ are the roots of non-leaf Merkleizations of the same object, with different pivot elements $i_0$ and $i_1$, it suffices to show that there is an indexed set of hashes $\{h_{j,k}\}_{j \in \{0,1\}, k \in \{0,...,3\}}$, such that:
+\begin{enumerate}
+\item $h_0 = H((h_{0,0}, h_{0,1}))$; that is, $h_{0,0}$ and $h_{0,1}$ are the Merkle hashes of the immediate children of the root of the object denoted by $h_0$ (with high probability, if $h_0$ is the root Merkle hash of a non-leaf object);
+\item $h_1 = H((h_{1,0}, h_{1,1}))$; that is, $h_{1,0}$ and $h_{1,1}$ are the Merkle hashes of the immediate children of the root of the object denoted by $h_1$ (w.h.p., if $h_1$ is the root Merkle hash of a non-leaf object);
+\item $h_{0,1} \equiv H((h_{0,2}, h_{0,3}))$; that is, w.h.p., the object denoted by $h_{0,1}$ can also be denoted by a Merkle hash tree whose root's immediate child hashes are $h_{0,2}$ and $h_{0,3}$;
+\item $h_{0,1} \equiv H((h_{1,3}, h_{1,1}))$; that is, w.h.p., the object denoted by $h_{0,1}$ can also be denoted by a Merkle hash tree whose root's immediate child hashes are $h_{1,3}$ and $h_{1,1}$;
+\item $h_{1,1} \equiv h_{0,3}$; that is, w.h.p., the object denoted by $h_{1,1}$ can also be denoted by $h_{0,3}$.
+\end{enumerate}
+Without loss of generality, it is assumed that $i_0 < i_1$; that is, the pivot element of the $h_0$ Merkleization is lesser than the pivot element of the $h_1$ Merkleization. The lower diagram in Figure~\ref{fig:merkle-equality} depicts what these conditions say is the case.
+
+The recursive zk-VM computation proving $h_0 \equiv h_1$, using different pivot elements $i_0 < i_1$, directly verifies claims (1) and (2), and verifies SNARKs output by the proving process run over itself in order to probabilistically verify claims (3)-(5). This shows how we can reduce the problem of proving an instance of $h_0 \equiv h_1$ to two smaller instances, providing a recursive proving scheme. The lower diagram in Figure~\ref{fig:merkle-equality} depicts what this says.
+
+These two recursive proof schemes for $h_0 \equiv h_1$ both rely on pivot elements in their informal descriptions, but not in their definitions. The conditions which are checked by the proving scheme entail the existence of pivot elements $i_0$ and $i_1$ for $h_0$ and $h_1$, with $i_0 = i_1$ or $i_0 < i_1$, respectively.
+
+The overall proof scheme for $h_0 \equiv h_1$ consists of the two mentioned recursive proof schemes, and the ``leaf'' proof scheme which directly verifies that there is an object $a \in A$ such that $h_0$ and $h_1$ are both Merkleizations of $a$. A proof of $h_0 \equiv h_1$ may be constructed using any one of these three proof schemes.
 
 \subsection{Set and sequence proof schemes}
 
@@ -217,12 +229,12 @@ The ZK proving system needs to prove statements of the following forms. For each
 
 \begin{enumerate}
 	\item There is a $t \in T$ such that $H(t) = h$ and $\text{coherent}(t) = 1$.
-	\item There is $x \in T \times C$ such that $H(x) = h$ and $\text{applies}(t, c) = 1$.
+	\item There is $x = (t, c) \in T \times C$ such that $H(x) = h$ and $\text{applies}(t, c) = 1$.
 	\item There is $x = (t, c, s) \in T \times C \times E$ such that $H(x) = h$ and $\text{schedule}(t, c) = s$.
 	\item There is $x = (t, c_0, e, c_1) \in T \times C \times E \times C$ such that $H(x) = h$ and $\text{update}(t, c_0, e) = c_1$.
 \end{enumerate}
 
-For each of these statement forms, there is an applicable recursive proof scheme. The reason for the proof schemes being recursive is that we assume that there is an upper bound on the amount of computation we can verify in a single proof, but we require the system to scale to function executions on arbitrarily complex inputs. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by directly proving the evaluation of the function on the given input. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
+For each of these statement forms, there is an applicable recursive proof scheme. The reason for the proof schemes being recursive is that we assume that there is an upper bound on the space and time complexity of a zk-VM execution verified directly by one proof, but we require the system to scale to function executions on arbitrarily complex inputs. For each recursive proof scheme, a proof may be either a leaf or a branch proof. A leaf proof proves a statement of the specified form by directly proving the evaluation of the function on the given input. A branch proof verifies two or more ZK proofs of the same scheme, and verifies that the statements those inner proofs prove suffice for the truth of the statement it verifies.
 
 Although branch proofs are described below with exactly two children, the descriptions can be extended in a straightforward manner to allow for branching factors greater than two.
 
@@ -234,7 +246,7 @@ Next, let's look at a recursive proving scheme for proving instances of $c = c_0
 
 Recall that for $c = c_0 \oplus c_1$ to be true, the following conditions are necessary and sufficient: there are $t_0, t_1 \in T$ such that $\text{applies}(t_0, c_0) = 1$, $\text{applies}(t_1, c_1) = 1$, $t_0 \wedge t_1 = \emptyset_T$, and $\text{asOf}(c_0) = \text{asOf}(c_1)$. The statement $\text{asOf}(c_0) = \text{asOf}(c_1)$ is assumed to be directly verifiable in $O(1)$, by opening the Merkleizations of $c_0$ and $c_1$ to a constant depth to read the value of a timestamp field on the structures. The other elements of the conditions for $c = c_0 \oplus c_1$ can be proven and succinctly verified using methods already defined.
 
-There is a circularity in the definitions of the recursive proving schemes for applies and $\oplus$, since each references the other. This is okay, because the proving scheme for each one references the proving scheme for the other one with respect to smaller subproblems only; so it does not lead to an infinite regress.
+There is a circularity in the definitions of the recursive proving schemes for applies and $\oplus$, since each references the other. This is okay, because the proving scheme for each one references the proving scheme for the other one with respect to smaller subproblems only; so it does not lead to an infinite regress. Probably the easiest way to handle this circularity is to define both proving schemes as part of the same program, and use a runtime input parameter to the program to determine which statement form is being verified.
 
 For branch (i.e., recursive) proofs of instances of $\text{update}(t, c_0, e) = c_1$, there are two kinds: the vertically sliced and horizontally sliced kinds. The vertically sliced kind decompose the problem into smaller subproblems by reducing the number of contracts involved. The horizontally sliced kind decompose the problem into smaller subproblems by reducing the number of events involved.
 
@@ -257,10 +269,10 @@ A branch scheduling proof verifies, for given hashes $h_i, h_o$, that there are 
 	\item $\text{applies}(t_k, c_k) = 1$, for each $k \in \{0,1\}$.
 	\item $\text{schedule}(t_k, c_k) = e_k$, for each $k \in \{0,1\}$.
 	\item $\text{id}(t_0) \cap \text{id}(t_1) = \emptyset$.
-	\item $e_0 \wedge e_1 = e$.
+	\item $e_0 \vee e_1 = e$.
 	\end{enumerate}
 \end{enumerate}
-These facts suffice to imply the given instance. All of these facts can be proven by methods already outlined, except for $e_0 \wedge e_1 = e$, which requires a method for proving unions of event sequences. Such a method should be easy enough to devise by following the example of the set union proving scheme.
+These facts suffice to imply the given instance. All of these facts can be proven by methods already outlined, except for $e_0 \vee e_1 = e$, which requires a method for proving unions of event sequences. Such a method should be easy enough to devise by following the example of the set union proving scheme.
 
 \section{Future directions}
 
