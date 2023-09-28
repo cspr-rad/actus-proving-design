@@ -200,7 +200,13 @@ Here is a description of the branch proofs in the set union recursive proving sc
 \end{enumerate}
 These facts suffice to imply that $A \cup B = C$. If $A \cup B = C$ and $A, B, C$ are nonempty, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $A \cup B = C$ to two smaller set union proving problems. Those smaller set union proving problems can be proven in ZK and their proofs verified recursively.
 
-This proving scheme for set unions requires a system for succinctly verifying facts of the form $A \uplus_x B = C$. Specifically, this can be done by succinctly verifying statements of the form: for given $h, h_0, h_1, h_x$, there are sets $A, B, C$ and a set element $x$ such that $A \uplus_x B = C$, $H(A) = h_0$, $H(B) = h_1$, $H(C) = h$, and $H(x) = h_x$. Such a statement can be verified in $O(1)$ when sets are Merkleized, because it just requires that $h$ be the root of a Merkleization of $C$ which decomposes $C$ into $A \setminus \{x\}, \{x\}$, and $B$. It should be denoted that this proving scheme does require that we can choose $h$ to be whatever the root of whatever Merkleization of $C$ makes this proving scheme work.
+This proving scheme for set unions requires a system for succinctly verifying facts of the form $A \uplus_x B = C$. Specifically, this can be done by succinctly verifying statements of the form: for given $h, h_0, h_1, h_x$, there are sets $A, B, C$ and a set element $x$ such that $A \uplus_x B = C$, $H(A) = h_0$, $H(B) = h_1$, $H(C) = h$, and $H(x) = h_x$. Such a statement just requires that $h$ be the root of a Merkleization of $C$ which decomposes $C$ into $A \setminus \{x\}, \{x\}$, and $B$. It should be noted that this proving scheme does require that we can choose $h$ to be whatever the root of whatever Merkleization of $C$ makes this proving scheme work. We need to verify that $h = H((H(H(A \setminus \{x\}), h_x), h_1))$, which we can do directly in $O(1)$.
+
+As the final step of verifyng $A \uplus_x B = C$ recursively, we need to verify that $H(A \setminus \{x\})$ is the root hash of a set whose elements are all less than $x$, and $h_1$ is the root hash of a set whose elements are all greater than $x$. For this we need two recursive proving schemes, one proving statements of the form ``$h$ is the hash of a set whose elements are all less than $x$,'' and one proving statements of the form ``$h$ is the hash of a set whose elements are all greater than $x$.'' 
+
+I will explicitly describe the proving scheme for ``$h$ is the hash of a set whose elements are all less than $x$,'' and the proving scheme for sets whose elements are all greater than $x$ will follow the same general structure. The proving scheme is recursive. The base case, as usual, directly verifies the statement in a single zk-VM execution. The recursive case, as usual, reduces the problem to two smaller subproblems of the same type which are verified using recursive proofs. Since the class of sets whose elements are all less than $x$ is closed under set union, to show that $h$ is the hash of a set $A$ whose elements are all less than $x$, it suffices to show that $h = H((h_0, h_1))$ for some hashes $h_0, h_1$ such that each of them is the hash of a set whose elements are all less than $x$. This means that we can partition $A$ into smaller subsets and verify the statement on those subsets as a reduction of the problem.
+
+That completes the description of the set union proving scheme and the various proving schemes it relies on.
 
 Here is a description of the branch proofs in the set disjointness proving scheme. Suppose for given hashes $h_0, h_1$, we want to show there are sets $A, B$ such that $A \cap B = \emptyset$, $H(A) = h_0$, and $H(B) = h_1$. We do so by proving that there are sets $A_0, A_1, B_0, B_1$ and a set element $x$ such that:
 \begin{enumerate}
@@ -210,6 +216,9 @@ Here is a description of the branch proofs in the set disjointness proving schem
 	\item $A_1 \cap B_1 = \emptyset$.
 \end{enumerate}
 These facts suffice to imply that $A \cap B = \emptyset$. If $A, B$ are nonempty and $A \cap B = \emptyset$, then such a set of facts can be constructed, and doing so suffices to reduce the problem of proving $A \cap B = \emptyset$ to two smaller set disjointness proving problems.
+
+
+Here is a recursive proving scheme for set existence. As usual, the base case of the recursive proving scheme is a scheme which verifies directly, in a single zk-VM execution proof, the statement of interest. The recursive case reduces the problem to two smaller problems of the same type. The recursive case works by 
 
 Here is a description of the branch proofs in the set image proving scheme. Suppose for given hashes $h_0, h_1$, we want to show there are sets $A, B$ such that $f(A) = B$, $H(A) = h_0$, and $H(B) = h_1$. We do so by proving that there are sets $A_0, A_1, B_0, B_1$ and a set element $x$ such that:
 \begin{enumerate}
